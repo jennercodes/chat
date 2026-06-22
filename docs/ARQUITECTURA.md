@@ -320,14 +320,19 @@ Formato común: `{ "type": string, "payload": object }`. Validado con Zod.
 
 ## 9. Plan por fases
 
-### Fase 0 — Scaffold ⬜
+### Fase 0 — Scaffold ✅ (commit `0acc845`)
 
-- [ ] Proyecto TanStack Start + TypeScript (strict) + pnpm
-- [ ] Tailwind + shadcn/ui configurados
-- [ ] ESLint + Prettier
-- [ ] Estructura de carpetas (sección 4)
-- [ ] Variables de entorno (`.env`): URL backend, URL WS
-- [ ] Tipos de dominio (`types/domain.ts`) + esquemas Zod base
+- [x] Proyecto TanStack Start + TypeScript (strict) + pnpm
+- [x] Tailwind + shadcn/ui configurados
+- [x] ESLint + Prettier
+- [x] Estructura de carpetas (sección 4)
+- [x] Variables de entorno (`.env` / `.env.example`): URL backend, URL WS
+- [x] Tipos de dominio (`types/domain.ts`) + esquemas Zod base (`lib/validation/`)
+
+> Verificado: `pnpm typecheck`, `pnpm lint` y `pnpm build` (cliente + SSR) en
+> verde; el dev server sirve HTML SSR (HTTP 200). Scripts disponibles: `dev`,
+> `build`, `preview`, `test`, `lint`, `format`, `check`, `typecheck`,
+> `generate-routes`. Alias de import del proyecto: `#/*` → `src/*`.
 
 ### Fase 1 — Autenticación ⬜
 
