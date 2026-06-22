@@ -20,6 +20,8 @@ export const env = createEnv({
     VITE_API_URL: z.string().url(),
     /** URL del WebSocket de chat. */
     VITE_WS_URL: z.string().url(),
+    /** Usa un WebSocket simulado en memoria (mientras no haya backend real). */
+    VITE_WS_MOCK: z.enum(['true', 'false']).optional(),
     /** Título de la app (opcional). */
     VITE_APP_TITLE: z.string().min(1).optional(),
   },

@@ -17,7 +17,7 @@ import { authBackend } from './auth-backend'
  *   cambia cuando se conecte el backend real.
  */
 
-const REFRESH_COOKIE = 'refresh_token'
+export const REFRESH_COOKIE = 'refresh_token'
 const REFRESH_MAX_AGE = 60 * 60 * 24 * 7 // 7 días
 
 function setRefreshCookie(token: string): void {

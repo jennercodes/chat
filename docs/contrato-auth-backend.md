@@ -35,11 +35,11 @@ nuestro propio servidor web hace de intermediario.
 
 ## 2. Endpoints propuestos
 
-| Método | Ruta            | Descripción                          |
-| ------ | --------------- | ------------------------------------ |
-| POST   | `/auth/login`   | Login con credenciales               |
+| Método | Ruta            | Descripción                             |
+| ------ | --------------- | --------------------------------------- |
+| POST   | `/auth/login`   | Login con credenciales                  |
 | POST   | `/auth/refresh` | Nuevo access token a partir del refresh |
-| POST   | `/auth/logout`  | Revoca el refresh token              |
+| POST   | `/auth/logout`  | Revoca el refresh token                 |
 
 ## 3. Formas de datos que asumimos hoy (ajústenlas si difieren)
 

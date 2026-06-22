@@ -10,7 +10,10 @@ function must<T>(value: T | null | undefined, message: string): T {
 describe('mockAuthBackend', () => {
   it('login con credenciales válidas devuelve tokens y usuario', async () => {
     const res = must(
-      await mockAuthBackend.login({ email: 'ana@chat.dev', password: 'password' }),
+      await mockAuthBackend.login({
+        email: 'ana@chat.dev',
+        password: 'password',
+      }),
       'login debería tener éxito',
     )
     expect(res.user.displayName).toBe('Ana')
@@ -31,13 +34,19 @@ describe('mockAuthBackend', () => {
       await mockAuthBackend.login({ email: 'ana@chat.dev', password: 'mala' }),
     ).toBeNull()
     expect(
-      await mockAuthBackend.login({ email: 'nadie@chat.dev', password: 'password' }),
+      await mockAuthBackend.login({
+        email: 'nadie@chat.dev',
+        password: 'password',
+      }),
     ).toBeNull()
   })
 
   it('verify valida el refresh token SIN rotarlo', async () => {
     const login = must(
-      await mockAuthBackend.login({ email: 'beto@chat.dev', password: 'password' }),
+      await mockAuthBackend.login({
+        email: 'beto@chat.dev',
+        password: 'password',
+      }),
       'login',
     )
     const v1 = await mockAuthBackend.verify(login.refreshToken)
@@ -48,7 +57,10 @@ describe('mockAuthBackend', () => {
 
   it('refresh rota el token: el anterior queda inválido y el nuevo es válido', async () => {
     const login = must(
-      await mockAuthBackend.login({ email: 'ana@chat.dev', password: 'password' }),
+      await mockAuthBackend.login({
+        email: 'ana@chat.dev',
+        password: 'password',
+      }),
       'login',
     )
     const rotated = must(
@@ -62,7 +74,10 @@ describe('mockAuthBackend', () => {
 
   it('logout revoca el refresh token', async () => {
     const login = must(
-      await mockAuthBackend.login({ email: 'ana@chat.dev', password: 'password' }),
+      await mockAuthBackend.login({
+        email: 'ana@chat.dev',
+        password: 'password',
+      }),
       'login',
     )
     await mockAuthBackend.logout(login.refreshToken)
