@@ -74,9 +74,13 @@ Nunca guardes tokens en `localStorage`. Ver skill `bff-auth`.
 
 ## Estado
 
-- **Fase 0 (scaffold) ✅** · **Fase 1 (auth: BFF + backend mock) ✅** · **Fase 2
-  (capa WebSocket + servidor WS mock) ✅.** Siguiente: **Fase 3 (chat 1:1)**.
-  Checklist por fases en `docs/ARQUITECTURA.md` §9.
-- Auth y WebSocket corren contra **mocks en memoria** hasta tener el backend real:
-  `src/server/auth-backend.ts` y `src/lib/ws/mock-socket.ts` (flag `VITE_WS_MOCK`).
-  Usuarios: `ana@chat.dev` / `password`, `beto@chat.dev` / `password`.
+- **Fase 0 (scaffold) ✅** · **Fase 1 (auth) ✅** · **Fase 2 (WebSocket) ✅** ·
+  **Fase 3 (chat 1:1) ✅.** Siguiente: **Fase 4 (pulido)**. Checklist por fases en
+  `docs/ARQUITECTURA.md` §9.
+- Auth, WebSocket y datos de chat corren contra **mocks en memoria** hasta tener el
+  backend real: `src/server/auth-backend.ts`, `src/lib/ws/mock-socket.ts` (flag
+  `VITE_WS_MOCK`) y `src/server/chat-backend.ts`. Cada uno tras una interfaz para
+  swap directo a `fetch`. Usuarios: `ana@chat.dev` / `password`, `beto@chat.dev` /
+  `password`.
+- `tsconfig` usa `noUncheckedIndexedAccess`: los accesos indexados son
+  `T | undefined`; usa guardas (`?? []`, `?.`) al indexar arrays/records.

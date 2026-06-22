@@ -366,13 +366,20 @@ Formato común: `{ "type": string, "payload": object }`. Validado con Zod.
 > el WebSocket nativo. Verificado: typecheck, lint, build y 6 tests del cliente
 > (connect/ticket, cola+flush, despacho/validación, heartbeat, reconexión).
 
-### Fase 3 — Chat 1:1 ⬜
+### Fase 3 — Chat 1:1 ✅ (commit `5e2fced`)
 
-- [ ] Lista de conversaciones (TanStack Query)
-- [ ] Buscar usuario e iniciar conversación
-- [ ] Ventana de conversación + historial paginado (cursor)
-- [ ] Envío optimista (sending → sent/failed) con dedupe por `clientMessageId`
-- [ ] Auto-scroll, agrupado por fecha, estados de mensaje
+- [x] Lista de conversaciones (TanStack Query)
+- [x] Buscar usuario e iniciar conversación (dialog)
+- [x] Ventana de conversación + historial paginado (cursor)
+- [x] Envío optimista (sending → sent/failed) con dedupe por `clientMessageId`
+- [x] Auto-scroll, agrupado por fecha, estados de mensaje
+
+> **Datos simulados** (`src/server/chat-backend.ts`, en memoria) tras la interfaz
+> `ChatBackend`; los mensajes en vivo van por el WebSocket. Limitaciones del mock:
+> los mensajes enviados no se persisten en el servidor (al recargar se ve el
+> historial semilla) y el `lastMessage`/`unreadCount` de la lista no se actualizan
+> en vivo. Verificado: typecheck, lint, build y 22 tests en verde; el guard
+> protege `/` y `/chat/:id`.
 
 ### Fase 4 — Pulido ⬜
 
