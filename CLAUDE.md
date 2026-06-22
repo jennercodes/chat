@@ -74,5 +74,8 @@ Nunca guardes tokens en `localStorage`. Ver skill `bff-auth`.
 
 ## Estado
 
-- **Fase 0 (scaffold) ✅ completada.** Siguiente: **Fase 1 (autenticación)**.
-  Checklist por fases en `docs/ARQUITECTURA.md` §9.
+- **Fase 0 (scaffold) ✅** · **Fase 1 (autenticación: BFF + backend simulado) ✅.**
+  Siguiente: **Fase 2 (capa WebSocket)**. Checklist por fases en
+  `docs/ARQUITECTURA.md` §9.
+- Auth contra **mock en memoria** (`src/server/auth-backend.ts`) hasta tener el
+  backend real. Usuarios: `ana@chat.dev` / `password`, `beto@chat.dev` / `password`.

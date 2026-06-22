@@ -334,13 +334,25 @@ Formato común: `{ "type": string, "payload": object }`. Validado con Zod.
 > `build`, `preview`, `test`, `lint`, `format`, `check`, `typecheck`,
 > `generate-routes`. Alias de import del proyecto: `#/*` → `src/*`.
 
-### Fase 1 — Autenticación ⬜
+### Fase 1 — Autenticación ✅ (commit `a77d7a3`)
 
-- [ ] Pantalla de login (React Hook Form + Zod)
-- [ ] BFF: `/api/auth/login`, `/refresh`, `/logout`, manejo de cookie httpOnly
-- [ ] Store de sesión (Zustand) con access token en memoria
-- [ ] Cliente HTTP con interceptor (Bearer + refresh en 401)
-- [ ] Rutas protegidas (`_authed/`) + hidratación vía `/auth/me`
+- [x] Pantalla de login (React Hook Form + Zod + shadcn)
+- [x] BFF: server functions `login`/`getSession`/`refresh`/`logout` con cookie
+      httpOnly (`src/server/auth.ts`)
+- [x] Store de sesión (Zustand) con access token en memoria (`src/store/auth.ts`)
+- [x] Cliente HTTP con interceptor (Bearer + refresh en 401) (`src/lib/api/client.ts`)
+- [x] Rutas protegidas (`_authed/`) + hidratación de sesión desde la cookie en el
+      `beforeLoad` del root
+
+> **Backend simulado:** no hay servicio real todavía. El BFF habla con un mock en
+> memoria aislado tras la interfaz `AuthBackend` (`src/server/auth-backend.ts`);
+> para conectar el backend real se cambia esa única implementación por `fetch`.
+> Usuarios mock: `ana@chat.dev` / `password`, `beto@chat.dev` / `password`.
+> Verificado: typecheck, lint, build (cliente + SSR) y tests (vitest) en verde; el
+> SSR redirige `/` → `/login` sin sesión.
+>
+> Pendiente menor (cuando haya más rutas protegidas): recordar el destino
+> original tras el login (deep-link redirect); hoy siempre vuelve a `/`.
 
 ### Fase 2 — Capa WebSocket ⬜
 
