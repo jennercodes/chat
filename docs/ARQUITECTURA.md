@@ -354,12 +354,17 @@ Formato común: `{ "type": string, "payload": object }`. Validado con Zod.
 > Pendiente menor (cuando haya más rutas protegidas): recordar el destino
 > original tras el login (deep-link redirect); hoy siempre vuelve a `/`.
 
-### Fase 2 — Capa WebSocket ⬜
+### Fase 2 — Capa WebSocket ✅ (commit `31c70bd`)
 
-- [ ] `WebSocketClient` (reconexión + backoff + heartbeat + cola)
-- [ ] Autenticación del WS (ticket o primer mensaje)
-- [ ] Hook `useChatSocket` + indicador de estado de conexión
-- [ ] Eventos tipados validados con Zod
+- [x] `ChatSocketClient` (reconexión backoff + jitter, heartbeat, cola offline)
+- [x] Autenticación del WS por **ticket** (`getWsTicketFn`, mock)
+- [x] Provider + hook `useChatSocket` + indicador de estado de conexión
+- [x] Eventos tipados validados con Zod (`serverEventSchema`)
+
+> **Servidor WS simulado** (`src/lib/ws/mock-socket.ts`): responde `ack`/`echo`/
+> `pong` mientras no hay backend. Se desactiva con `VITE_WS_MOCK=false` para usar
+> el WebSocket nativo. Verificado: typecheck, lint, build y 6 tests del cliente
+> (connect/ticket, cola+flush, despacho/validación, heartbeat, reconexión).
 
 ### Fase 3 — Chat 1:1 ⬜
 
