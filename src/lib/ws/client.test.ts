@@ -122,8 +122,8 @@ describe('ChatSocketClient', () => {
 
     s.open()
     expect(s.sent).toHaveLength(2)
-    expect(typeOf(s.sent[0])).toBe('message.send')
-    expect(typeOf(s.sent[1])).toBe('ping')
+    expect(typeOf(must(s.sent[0], 'sent[0]'))).toBe('message.send')
+    expect(typeOf(must(s.sent[1], 'sent[1]'))).toBe('ping')
   })
 
   it('despacha eventos válidos e ignora los inválidos', async () => {
@@ -160,7 +160,7 @@ describe('ChatSocketClient', () => {
     s.receiveRaw(JSON.stringify({ type: 'desconocido' }))
 
     expect(events).toHaveLength(1)
-    expect(events[0].type).toBe('message.new')
+    expect(must(events[0], 'evento').type).toBe('message.new')
   })
 
   it('heartbeat: envía ping y el pong evita la reconexión', async () => {
