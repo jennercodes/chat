@@ -1,39 +1,28 @@
-# Dependencias
-node_modules/
-.pnp
-.pnp.js
-
-# Builds / output (TanStack Start + Vite + Nitro)
-dist/
-.output/
-.nitro/
-.tanstack/
-.vite/
-build/
-
-# Entorno
-.env
-.env.*
-!.env.example
-
-# Logs
-*.log
-npm-debug.log*
-pnpm-debug.log*
-
-# Sistema operativo
+node_modules
 .DS_Store
-Thumbs.db
+dist
+dist-ssr
+*.local
+.env
+.nitro
+.tanstack
+.wrangler
+.output
+.vinxi
+__unconfig*
+todos.json
 
 # IDE
 .idea/
-.vscode/*
-!.vscode/extensions.json
+
+# Entorno (mantener el ejemplo versionado)
+.env.*
+!.env.example
+
+# Tests / cobertura
+coverage
+playwright-report
+test-results
 
 # Claude Code (local)
 .claude/settings.local.json
-
-# Tests
-coverage/
-playwright-report/
-test-results/

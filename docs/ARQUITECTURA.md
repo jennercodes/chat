@@ -15,42 +15,43 @@ tiempo real** con login. Construida como app full-stack con **TanStack Start**,
 donde el servidor (Nitro) actúa además como **BFF** (Backend-For-Frontend) para
 proteger los tokens de autenticación.
 
-| Decisión | Valor | Estado |
-|----------|-------|--------|
-| Plataforma | Web (navegador) | ✅ Decidido |
-| Framework | TanStack Start (React + TS) | ✅ Decidido |
-| Alcance v1 | Chat 1:1 básico | ✅ Decidido |
-| UI | Tailwind + shadcn/ui | ✅ Decidido |
-| Auth | JWT Bearer + refresh token (con expiración) | ✅ Decidido |
-| Esquemas de datos | **Los define el frontend** y se pasan a backend | 🟡 Propuesto (sección 8) |
-| Endpoints REST | Tentativos, a confirmar con backend | 🟡 Propuesto (sección 8) |
-| Protocolo WebSocket | Tentativo, a confirmar con backend | 🟡 Propuesto (sección 7-8) |
+| Decisión            | Valor                                           | Estado                     |
+| ------------------- | ----------------------------------------------- | -------------------------- |
+| Plataforma          | Web (navegador)                                 | ✅ Decidido                |
+| Framework           | TanStack Start (React + TS)                     | ✅ Decidido                |
+| Alcance v1          | Chat 1:1 básico                                 | ✅ Decidido                |
+| UI                  | Tailwind + shadcn/ui                            | ✅ Decidido                |
+| Auth                | JWT Bearer + refresh token (con expiración)     | ✅ Decidido                |
+| Esquemas de datos   | **Los define el frontend** y se pasan a backend | 🟡 Propuesto (sección 8)   |
+| Endpoints REST      | Tentativos, a confirmar con backend             | 🟡 Propuesto (sección 8)   |
+| Protocolo WebSocket | Tentativo, a confirmar con backend              | 🟡 Propuesto (sección 7-8) |
 
 ---
 
 ## 2. Stack tecnológico
 
-| Capa | Elección | Por qué |
-|------|----------|---------|
-| Framework | **TanStack Start** (v1) | Router type-safe + Vite + servidor Nitro (BFF) |
-| Lenguaje | **TypeScript** (strict) | Tipado de extremo a extremo |
-| Routing | **TanStack Router** (incluido) | Rutas 100% type-safe, loaders integrados |
-| Estado servidor | **TanStack Query** | Caché de historial/conversaciones, reintentos, paginación |
-| Estado cliente | **Zustand** | Conexión WS, sesión, estado de UI de chat |
-| Tiempo real | **WebSocket nativo** + cliente propio | Reconexión, heartbeat, cola offline, eventos tipados |
-| Estilos | **Tailwind CSS** | Utilidades, rápido y mantenible |
-| Componentes | **shadcn/ui** | Accesibles, copiados al repo (control total) |
-| Formularios | **React Hook Form + Zod** | Login/registro validado y tipado |
-| Validación | **Zod** | Valida también payloads de API/WS en runtime |
-| Tests | **Vitest + Testing Library** (+ Playwright e2e luego) | Unit + e2e |
-| Calidad | **ESLint + Prettier** | Estándar |
-| Gestor paquetes | **pnpm** | Rápido, eficiente en disco |
+| Capa            | Elección                                              | Por qué                                                   |
+| --------------- | ----------------------------------------------------- | --------------------------------------------------------- |
+| Framework       | **TanStack Start** (v1)                               | Router type-safe + Vite + servidor Nitro (BFF)            |
+| Lenguaje        | **TypeScript** (strict)                               | Tipado de extremo a extremo                               |
+| Routing         | **TanStack Router** (incluido)                        | Rutas 100% type-safe, loaders integrados                  |
+| Estado servidor | **TanStack Query**                                    | Caché de historial/conversaciones, reintentos, paginación |
+| Estado cliente  | **Zustand**                                           | Conexión WS, sesión, estado de UI de chat                 |
+| Tiempo real     | **WebSocket nativo** + cliente propio                 | Reconexión, heartbeat, cola offline, eventos tipados      |
+| Estilos         | **Tailwind CSS**                                      | Utilidades, rápido y mantenible                           |
+| Componentes     | **shadcn/ui**                                         | Accesibles, copiados al repo (control total)              |
+| Formularios     | **React Hook Form + Zod**                             | Login/registro validado y tipado                          |
+| Validación      | **Zod**                                               | Valida también payloads de API/WS en runtime              |
+| Tests           | **Vitest + Testing Library** (+ Playwright e2e luego) | Unit + e2e                                                |
+| Calidad         | **ESLint + Prettier**                                 | Estándar                                                  |
+| Gestor paquetes | **pnpm**                                              | Rápido, eficiente en disco                                |
 
 ---
 
 ## 3. Por qué TanStack Start (validación y trade-offs)
 
 **A favor:**
+
 - **Routing type-safe de primera clase** (TanStack Router): rutas, params y
   search params tipados; menos bugs de navegación.
 - **Servidor Nitro integrado** → lo usamos como **BFF**: el refresh token vive en
@@ -59,6 +60,7 @@ proteger los tokens de autenticación.
 - v1.0 estable (marzo 2026), production-ready.
 
 **Trade-offs a tener presentes:**
+
 - Ahora **hay un servidor que desplegar** (no es un SPA estático puro). A cambio
   ganamos seguridad de tokens y un punto para proxiar/ocultar el backend.
 - **No soporta React Server Components** todavía → no nos afecta (no los usamos).
@@ -102,39 +104,39 @@ src/
 // types/domain.ts
 
 export interface User {
-  id: string;
-  displayName: string;
-  avatarUrl?: string;
+  id: string
+  displayName: string
+  avatarUrl?: string
   // presencia: opcional en v1, útil más adelante
-  status?: 'online' | 'offline';
-  lastSeenAt?: string; // ISO 8601
+  status?: 'online' | 'offline'
+  lastSeenAt?: string // ISO 8601
 }
 
 export type MessageStatus =
-  | 'sending'   // optimista en cliente, sin ack del server
-  | 'sent'      // el server lo aceptó (ack)
+  | 'sending' // optimista en cliente, sin ack del server
+  | 'sent' // el server lo aceptó (ack)
   | 'delivered' // entregado al destinatario (futuro)
-  | 'read'      // leído por el destinatario (futuro)
-  | 'failed';   // falló el envío
+  | 'read' // leído por el destinatario (futuro)
+  | 'failed' // falló el envío
 
 export interface Message {
-  id: string;             // id definitivo (lo asigna el server)
-  clientMessageId: string;// id generado en cliente para dedupe/optimista
-  conversationId: string;
-  senderId: string;
-  content: string;
-  status: MessageStatus;
-  createdAt: string;      // ISO 8601
-  editedAt?: string;
+  id: string // id definitivo (lo asigna el server)
+  clientMessageId: string // id generado en cliente para dedupe/optimista
+  conversationId: string
+  senderId: string
+  content: string
+  status: MessageStatus
+  createdAt: string // ISO 8601
+  editedAt?: string
 }
 
 export interface Conversation {
-  id: string;
-  type: 'direct';         // v1: solo 1:1. 'group' más adelante
-  participants: User[];   // en 1:1 son 2 usuarios
-  lastMessage?: Message;
-  unreadCount: number;
-  updatedAt: string;
+  id: string
+  type: 'direct' // v1: solo 1:1. 'group' más adelante
+  participants: User[] // en 1:1 son 2 usuarios
+  lastMessage?: Message
+  unreadCount: number
+  updatedAt: string
 }
 ```
 
@@ -191,6 +193,7 @@ redirige a `/login`. Hidratación de sesión al cargar la app vía `/api/auth/me
 El corazón del chat. Cliente reutilizable en `lib/ws/`.
 
 **Responsabilidades del `WebSocketClient`:**
+
 - **Conexión singleton** y ciclo de vida (connect/disconnect).
 - **Reconexión automática** con backoff exponencial + jitter.
 - **Heartbeat** (ping/pong) para detectar conexiones muertas.
@@ -201,6 +204,7 @@ El corazón del chat. Cliente reutilizable en `lib/ws/`.
 
 **Autenticación del WebSocket (a confirmar con backend):**
 Los navegadores no permiten cabeceras custom en el handshake WS. Opciones:
+
 1. **(Recomendada) Ticket de corta vida:** el cliente pide un ticket por REST
    (`POST /ws/ticket`, autenticado con Bearer) y conecta con `wss://.../ws?ticket=…`.
    El ticket caduca en segundos y es de un solo uso.
@@ -209,6 +213,7 @@ Los navegadores no permiten cabeceras custom en el handshake WS. Opciones:
 3. Token en query string (más simple, pero el token puede quedar en logs).
 
 **Envío optimista de mensajes:**
+
 1. Usuario envía → se crea `Message` con `clientMessageId` y `status: 'sending'`,
    se pinta de inmediato en la UI.
 2. Se manda por WS (o se encola si está desconectado).
@@ -226,17 +231,17 @@ Los navegadores no permiten cabeceras custom en el handshake WS. Opciones:
 
 ### 8.1 Endpoints REST (tentativos)
 
-| Método | Ruta | Descripción | Auth |
-|--------|------|-------------|------|
-| POST | `/auth/login` | Login con credenciales | Pública |
-| POST | `/auth/refresh` | Nuevo access token desde refresh | Cookie/refresh |
-| POST | `/auth/logout` | Revoca sesión | Bearer |
-| GET | `/auth/me` | Perfil del usuario actual | Bearer |
-| GET | `/users?search=` | Buscar usuarios para iniciar chat | Bearer |
-| GET | `/conversations` | Lista de conversaciones del usuario | Bearer |
-| POST | `/conversations` | Crear/obtener conversación 1:1 | Bearer |
-| GET | `/conversations/:id/messages?cursor=&limit=` | Historial paginado (cursor) | Bearer |
-| POST | `/ws/ticket` | Ticket corto para abrir el WebSocket | Bearer |
+| Método | Ruta                                         | Descripción                          | Auth           |
+| ------ | -------------------------------------------- | ------------------------------------ | -------------- |
+| POST   | `/auth/login`                                | Login con credenciales               | Pública        |
+| POST   | `/auth/refresh`                              | Nuevo access token desde refresh     | Cookie/refresh |
+| POST   | `/auth/logout`                               | Revoca sesión                        | Bearer         |
+| GET    | `/auth/me`                                   | Perfil del usuario actual            | Bearer         |
+| GET    | `/users?search=`                             | Buscar usuarios para iniciar chat    | Bearer         |
+| GET    | `/conversations`                             | Lista de conversaciones del usuario  | Bearer         |
+| POST   | `/conversations`                             | Crear/obtener conversación 1:1       | Bearer         |
+| GET    | `/conversations/:id/messages?cursor=&limit=` | Historial paginado (cursor)          | Bearer         |
+| POST   | `/ws/ticket`                                 | Ticket corto para abrir el WebSocket | Bearer         |
 
 ### 8.2 Ejemplos de payloads (REST)
 
@@ -316,6 +321,7 @@ Formato común: `{ "type": string, "payload": object }`. Validado con Zod.
 ## 9. Plan por fases
 
 ### Fase 0 — Scaffold ⬜
+
 - [ ] Proyecto TanStack Start + TypeScript (strict) + pnpm
 - [ ] Tailwind + shadcn/ui configurados
 - [ ] ESLint + Prettier
@@ -324,6 +330,7 @@ Formato común: `{ "type": string, "payload": object }`. Validado con Zod.
 - [ ] Tipos de dominio (`types/domain.ts`) + esquemas Zod base
 
 ### Fase 1 — Autenticación ⬜
+
 - [ ] Pantalla de login (React Hook Form + Zod)
 - [ ] BFF: `/api/auth/login`, `/refresh`, `/logout`, manejo de cookie httpOnly
 - [ ] Store de sesión (Zustand) con access token en memoria
@@ -331,12 +338,14 @@ Formato común: `{ "type": string, "payload": object }`. Validado con Zod.
 - [ ] Rutas protegidas (`_authed/`) + hidratación vía `/auth/me`
 
 ### Fase 2 — Capa WebSocket ⬜
+
 - [ ] `WebSocketClient` (reconexión + backoff + heartbeat + cola)
 - [ ] Autenticación del WS (ticket o primer mensaje)
 - [ ] Hook `useChatSocket` + indicador de estado de conexión
 - [ ] Eventos tipados validados con Zod
 
 ### Fase 3 — Chat 1:1 ⬜
+
 - [ ] Lista de conversaciones (TanStack Query)
 - [ ] Buscar usuario e iniciar conversación
 - [ ] Ventana de conversación + historial paginado (cursor)
@@ -344,6 +353,7 @@ Formato común: `{ "type": string, "payload": object }`. Validado con Zod.
 - [ ] Auto-scroll, agrupado por fecha, estados de mensaje
 
 ### Fase 4 — Pulido ⬜
+
 - [ ] Estados vacíos / carga / error
 - [ ] Responsive (móvil ↔ desktop)
 - [ ] Reintento de mensajes fallidos
@@ -357,19 +367,14 @@ Formato común: `{ "type": string, "payload": object }`. Validado con Zod.
 ## 10. Preguntas abiertas para el equipo de backend
 
 **Auth**
+
 1. ¿Tiempos de expiración de access y refresh token? ¿Rotación de refresh?
 2. ¿Formato exacto de respuesta de `/auth/login` y `/auth/refresh`?
 3. ¿Claims dentro del JWT que el frontend pueda usar (id, nombre, avatar)?
 
-**WebSocket**
-4. ¿Cómo autenticamos el handshake? (ticket recomendado vs token en primer frame)
-5. ¿Formato final de los mensajes? ¿Hay `ack` de confirmación?
-6. ¿El historial llega por REST (paginado) o por WS al conectar?
-7. ¿Esperan que el cliente haga heartbeat (ping/pong)? ¿Cada cuánto?
+**WebSocket** 4. ¿Cómo autenticamos el handshake? (ticket recomendado vs token en primer frame) 5. ¿Formato final de los mensajes? ¿Hay `ack` de confirmación? 6. ¿El historial llega por REST (paginado) o por WS al conectar? 7. ¿Esperan que el cliente haga heartbeat (ping/pong)? ¿Cada cuánto?
 
-**General**
-8. URLs de entornos (dev / staging / prod) y configuración de CORS.
-9. ¿Paginación por cursor o por offset para el historial?
+**General** 8. URLs de entornos (dev / staging / prod) y configuración de CORS. 9. ¿Paginación por cursor o por offset para el historial?
 
 ---
 
