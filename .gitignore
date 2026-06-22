@@ -1,0 +1,39 @@
+# Dependencias
+node_modules/
+.pnp
+.pnp.js
+
+# Builds / output (TanStack Start + Vite + Nitro)
+dist/
+.output/
+.nitro/
+.tanstack/
+.vite/
+build/
+
+# Entorno
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# Claude Code (local)
+.claude/settings.local.json
+
+# Tests
+coverage/
+playwright-report/
+test-results/
