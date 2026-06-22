@@ -15,6 +15,8 @@ export default [
     },
   },
   {
-    ignores: ['eslint.config.js', 'prettier.config.js'],
+    // shadcn/ui son componentes vendorizados (generados por el CLI); no los
+    // linteamos con las reglas estrictas del proyecto. Prettier sí los formatea.
+    ignores: ['eslint.config.js', 'prettier.config.js', 'src/components/ui/**'],
   },
 ]
