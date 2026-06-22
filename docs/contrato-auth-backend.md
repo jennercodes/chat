@@ -1,5 +1,9 @@
 # Contrato de autenticación — Frontend ↔ Backend
 
+> ⚠️ **Documento original (solo auth).** El contrato completo y vigente
+> (auth + WebSocket + REST de chat) está en
+> [`contrato-backend.md`](contrato-backend.md). Manténganse en ese.
+>
 > Mensaje para el equipo de backend. El frontend ya tiene el flujo de
 > login/logout funcionando contra un backend **simulado**; este documento
 > propone el contrato real a confirmar/alinear.
