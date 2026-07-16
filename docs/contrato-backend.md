@@ -6,16 +6,44 @@
 >
 > Fecha: 2026-06-22 · Reemplaza/expande a `contrato-auth-backend.md`.
 
+> **⚠️ Estado real del backend a 2026-07-15** (lo verificado contra respuestas
+> reales; la propuesta de abajo era el ideal). El frontend ya se adaptó a esto:
+>
+> 1. **Auth es un stub (sin JWT real).** `POST /auth/login` ignora email/password
+>    y devuelve **siempre `u1`** (Ana). Los endpoints REST actúan **siempre como
+>    `u1`** (el `Authorization` no cambia el usuario en REST). **Solo el
+>    `POST /ws/ticket`** distingue usuario: interpreta `Bearer <token>` como
+>    `userId` si existe (p. ej. `Bearer u2`); cualquier otro → `u1`.
+> 2. **Timestamps inconsistentes:** el **WS** emite UTC con `Z`; el **REST** emite
+>    hora **local sin `Z`**. Por eso los esquemas usan `z.string()` (no
+>    `.datetime()`). En dev (mismo host) el display cuadra; en prod con TZ distinta
+>    puede desviarse hasta que backend alinee a UTC.
+> 3. **`User` con dos formas:** en `conversation.participants` llega la entidad
+>    completa (`nombres`, `apellidos`, `rol`, `status`, `lastSeenAt`); en `/users` y
+>    `auth.user` el DTO reducido. El front valida el subconjunto
+>    `{ id, displayName, avatarUrl }` y **descarta** los campos extra.
+> 4. **`type` de conversación en MAYÚSCULAS** (`DIRECT`); `lastMessage` y
+>    `lastSeenAt`/`avatarUrl` pueden ser `null`.
+
 ---
 
 ## 1. Visión general
 
 - El frontend es una app web (TanStack Start) con un **BFF** (nuestro servidor).
-  El navegador habla con el BFF; el **BFF llama a su API servidor-a-servidor**.
-- **No necesitan configurar CORS** para nosotros (las llamadas REST salen del BFF,
-  no del navegador).
-- **Autenticación:** JWT **Bearer**. El BFF adjunta `Authorization: Bearer <accessToken>`
-  en cada llamada REST; ustedes identifican al usuario por ese token.
+  El reparto de llamadas es:
+  - **Auth** (`/auth/login`, `/auth/refresh`, `/auth/logout`) → las hace el **BFF
+    servidor-a-servidor**. No requieren CORS. El refresh token nunca llega al
+    navegador (lo guarda el BFF en cookie httpOnly).
+  - **Chat REST** (`/conversations`, `/users`, historial) y **`/ws/ticket`** → las
+    hace el **navegador directo** a su API con `Authorization: Bearer`.
+- **⚠️ CORS requerido** para las llamadas del navegador: permitir el origen del
+  frontend (`http://localhost:3000` en dev), los métodos `GET, POST, OPTIONS` y
+  las cabeceras `Authorization` y `Content-Type` (responder también el preflight
+  `OPTIONS`). **No** hace falta `Access-Control-Allow-Credentials`: esas llamadas
+  van sin cookies (autenticadas solo por el Bearer).
+- **Autenticación:** JWT **Bearer**. Se adjunta `Authorization: Bearer <accessToken>`
+  en cada llamada REST protegida y en `/ws/ticket`; ustedes identifican al usuario
+  por ese token.
 - **Tokens:** el access token vive en memoria en el cliente; el refresh token lo
   guarda el BFF en una cookie `httpOnly`. **Sus endpoints devuelven los tokens en
   el cuerpo JSON** (no por `Set-Cookie`); la cookie la gestionamos nosotros.
