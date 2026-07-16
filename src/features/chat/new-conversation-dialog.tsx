@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useRouter } from '@tanstack/react-router'
 import { Plus } from 'lucide-react'
-import { createConversationFn, searchUsersFn } from '#/server/chat'
+import { getOrCreateConversation, searchUsers } from '#/lib/api/chat'
 import {
   Dialog,
   DialogContent,
@@ -23,12 +23,12 @@ export function NewConversationDialog() {
 
   const { data: users } = useQuery({
     queryKey: ['users', query],
-    queryFn: () => searchUsersFn({ data: { query } }),
+    queryFn: () => searchUsers(query),
     enabled: open,
   })
 
   const create = useMutation({
-    mutationFn: (userId: string) => createConversationFn({ data: { userId } }),
+    mutationFn: (userId: string) => getOrCreateConversation(userId),
     onSuccess: async (conversation) => {
       await queryClient.invalidateQueries({ queryKey: ['conversations'] })
       setOpen(false)

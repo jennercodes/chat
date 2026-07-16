@@ -7,10 +7,9 @@ import {
   useState,
 } from 'react'
 import { env } from '#/env'
-import { getWsTicketFn } from '#/server/ws'
+import { getWsTicket } from '#/lib/api/ws'
 import { useConnectionStore } from '#/store/connection'
 import { ChatSocketClient } from './client'
-import { createMockSocket } from './mock-socket'
 import type { ClientEvent, ServerEvent } from '#/lib/validation/ws'
 
 interface ChatSocketContextValue {
@@ -36,9 +35,7 @@ export function ChatSocketProvider({
     () =>
       new ChatSocketClient({
         url: env.VITE_WS_URL,
-        getTicket: () => getWsTicketFn(),
-        socketFactory:
-          env.VITE_WS_MOCK === 'false' ? undefined : createMockSocket,
+        getTicket: () => getWsTicket(),
         onStatusChange: (status) =>
           useConnectionStore.getState().setStatus(status),
         onEvent: (event) => {

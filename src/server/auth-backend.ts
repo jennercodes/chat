@@ -1,24 +1,23 @@
 /**
- * MOCK del backend de autenticación (en memoria).
+ * Adaptador de autenticación que el BFF (`server/auth.ts`) usa para hablar con el
+ * backend real (Spring) vía `fetch`. Solo corre en el servidor (Nitro).
  *
- * Implementa la interfaz `AuthBackend` que consume el BFF (`server/auth.ts`).
- * Cuando exista el backend real, crea otra implementación que haga `fetch` a sus
- * endpoints (`/auth/login`, `/auth/refresh`, …) y expórtala como `authBackend`
- * en lugar de `mockAuthBackend`. El contrato es tentativo (docs/ARQUITECTURA.md).
+ * Contrato: docs/contrato-backend.md §2 (auth JWT real).
+ * - `POST /auth/login`   { email, password }   (público) -> AuthResponse | 401
+ * - `POST /auth/refresh` { refreshToken }       (público) -> AuthResponse | 401
+ * - `POST /auth/logout`  (Bearer <accessToken>)           -> 204
  *
- * Nota: el almacén de refresh tokens es en memoria → se reinicia al reiniciar el
- * servidor (o con HMR en dev). Aceptable para el mock: basta volver a entrar.
- *
- * Usuarios de prueba:
- *   ana@chat.dev  / password
- *   beto@chat.dev / password
+ * El BFF guarda el `refreshToken` en una cookie httpOnly y solo reenvía
+ * `accessToken` + `user` al cliente.
  */
-import { randomUUID } from 'node:crypto'
+import { env } from '#/env'
+import { authResponseSchema } from '#/lib/validation/auth'
 import type { User } from '#/types/domain'
 
-export interface AuthTokens {
+export interface AuthSession {
   accessToken: string
   refreshToken: string
+  user: User
 }
 
 export interface AuthBackend {
@@ -26,87 +25,53 @@ export interface AuthBackend {
   login: (input: {
     email: string
     password: string
-  }) => Promise<(AuthTokens & { user: User }) | null>
-  /** Valida el refresh token y emite un access token nuevo SIN rotarlo. */
-  verify: (
-    refreshToken: string,
-  ) => Promise<{ accessToken: string; user: User } | null>
+  }) => Promise<AuthSession | null>
   /** Rota el refresh token y emite tokens nuevos. `null` si es inválido. */
-  refresh: (
-    refreshToken: string,
-  ) => Promise<(AuthTokens & { user: User }) | null>
-  /** Revoca el refresh token (logout). */
-  logout: (refreshToken: string) => Promise<void>
+  refresh: (refreshToken: string) => Promise<AuthSession | null>
+  /** Cierra sesión en el backend, autenticado con el access token (Bearer). */
+  logout: (accessToken: string) => Promise<void>
 }
 
-// --- Datos mock -------------------------------------------------------------
-
-interface MockUser extends User {
-  email: string
-  password: string
+function authUrl(path: string): string {
+  return `${env.VITE_API_URL}${path}`
 }
 
-const MOCK_USERS: Array<MockUser> = [
-  { id: 'u1', displayName: 'Ana', email: 'ana@chat.dev', password: 'password' },
-  {
-    id: 'u2',
-    displayName: 'Beto',
-    email: 'beto@chat.dev',
-    password: 'password',
-  },
-]
-
-// refreshToken -> userId (en memoria).
-const refreshStore = new Map<string, string>()
-
-function toPublicUser(u: MockUser): User {
-  return { id: u.id, displayName: u.displayName, avatarUrl: u.avatarUrl }
+async function postJson(path: string, body: unknown): Promise<Response> {
+  return fetch(authUrl(path), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
 }
 
-function newAccessToken(userId: string): string {
-  return `mock.${userId}.${randomUUID()}`
+/** Valida la respuesta del backend y la mapea a `AuthSession`. */
+async function parseSession(res: Response): Promise<AuthSession | null> {
+  if (!res.ok) return null // 401/403 = credenciales o refresh inválidos
+  const data = authResponseSchema.parse(await res.json())
+  return {
+    accessToken: data.accessToken,
+    refreshToken: data.refreshToken,
+    user: data.user,
+  }
 }
 
-function issueTokens(userId: string): AuthTokens {
-  const refreshToken = randomUUID()
-  refreshStore.set(refreshToken, userId)
-  return { accessToken: newAccessToken(userId), refreshToken }
-}
-
-function findById(userId: string): MockUser | undefined {
-  return MOCK_USERS.find((u) => u.id === userId)
-}
-
-export const mockAuthBackend: AuthBackend = {
-  async login({ email, password }) {
-    const found = MOCK_USERS.find(
-      (u) => u.email === email.toLowerCase().trim() && u.password === password,
-    )
-    if (!found) return null
-    return { ...issueTokens(found.id), user: toPublicUser(found) }
-  },
-
-  async verify(refreshToken) {
-    const userId = refreshStore.get(refreshToken)
-    if (!userId) return null
-    const found = findById(userId)
-    if (!found) return null
-    return { accessToken: newAccessToken(userId), user: toPublicUser(found) }
+export const httpAuthBackend: AuthBackend = {
+  async login(input) {
+    return parseSession(await postJson('/auth/login', input))
   },
 
   async refresh(refreshToken) {
-    const userId = refreshStore.get(refreshToken)
-    if (!userId) return null
-    const found = findById(userId)
-    if (!found) return null
-    refreshStore.delete(refreshToken) // rotación
-    return { ...issueTokens(found.id), user: toPublicUser(found) }
+    return parseSession(await postJson('/auth/refresh', { refreshToken }))
   },
 
-  async logout(refreshToken) {
-    refreshStore.delete(refreshToken)
+  async logout(accessToken) {
+    // Best-effort: si el backend falla, igual borramos la cookie en el BFF.
+    await fetch(authUrl('/auth/logout'), {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${accessToken}` },
+    }).catch(() => undefined)
   },
 }
 
-/** Implementación activa del backend de auth. Swap aquí por la real. */
-export const authBackend: AuthBackend = mockAuthBackend
+/** Implementación activa del backend de auth. */
+export const authBackend: AuthBackend = httpAuthBackend

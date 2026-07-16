@@ -7,6 +7,17 @@ import { messageSchema, messageStatusSchema } from './domain'
  */
 
 // ---------------------------------------------------------------------------
+// REST: ticket de conexión (POST /ws/ticket)
+// ---------------------------------------------------------------------------
+
+/** Respuesta de `POST /ws/ticket`: ticket corto de un solo uso. */
+export const wsTicketSchema = z.object({
+  ticket: z.string(),
+  expiresIn: z.number().optional(), // segundos de vida del ticket
+})
+export type WsTicket = z.infer<typeof wsTicketSchema>
+
+// ---------------------------------------------------------------------------
 // Cliente -> Servidor
 // ---------------------------------------------------------------------------
 

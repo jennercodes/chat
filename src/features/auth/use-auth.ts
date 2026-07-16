@@ -1,7 +1,7 @@
 import { useMutation } from '@tanstack/react-query'
 import { useRouter } from '@tanstack/react-router'
 import { loginFn, logoutFn } from '#/server/auth'
-import { useAuthStore } from '#/store/auth'
+import { getAccessToken, useAuthStore } from '#/store/auth'
 import type { LoginInput } from '#/lib/validation/auth'
 
 /**
@@ -25,7 +25,7 @@ export function useLogout() {
   const router = useRouter()
   const clear = useAuthStore((s) => s.clear)
   return useMutation({
-    mutationFn: () => logoutFn(),
+    mutationFn: () => logoutFn({ data: { accessToken: getAccessToken() } }),
     onSuccess: async () => {
       clear()
       await router.invalidate()

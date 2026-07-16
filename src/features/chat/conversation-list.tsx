@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
-import { listConversationsFn } from '#/server/chat'
+import { listConversations } from '#/lib/api/chat'
 import { Avatar, AvatarFallback } from '#/components/ui/avatar'
 import { Badge } from '#/components/ui/badge'
 import { Separator } from '#/components/ui/separator'
@@ -55,7 +55,7 @@ function ConversationItem({
 export function ConversationList({ currentUserId }: { currentUserId: string }) {
   const { data: conversations, isLoading } = useQuery({
     queryKey: ['conversations'],
-    queryFn: () => listConversationsFn(),
+    queryFn: () => listConversations(),
   })
 
   return (

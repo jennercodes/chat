@@ -4,7 +4,7 @@ import {
   getCookie,
   setCookie,
 } from '@tanstack/react-start/server'
-import { loginSchema } from '#/lib/validation/auth'
+import { loginSchema, logoutInputSchema } from '#/lib/validation/auth'
 import type { AuthResult } from '#/lib/validation/auth'
 import { authBackend } from './auth-backend'
 
@@ -13,8 +13,8 @@ import { authBackend } from './auth-backend'
  *
  * - El refresh token se guarda en una cookie `httpOnly` que el JS del cliente
  *   nunca lee. El access token se devuelve al cliente para vivir en memoria.
- * - Hoy el BFF habla con un backend simulado (`auth-backend.ts`); el patrón no
- *   cambia cuando se conecte el backend real.
+ * - El BFF habla con el backend real (`auth-backend.ts`) vía `fetch`. El resto de
+ *   la API REST del chat la llama el navegador directo con Bearer (`lib/api/`).
  */
 
 export const REFRESH_COOKIE = 'refresh_token'
@@ -34,6 +34,23 @@ function clearRefreshCookie(): void {
   deleteCookie(REFRESH_COOKIE, { path: '/' })
 }
 
+/**
+ * Lee el refresh de la cookie, lo rota contra el backend, actualiza la cookie y
+ * devuelve access + user. `null` si no hay cookie o el refresh es inválido (en
+ * cuyo caso limpia la cookie). Base de la hidratación y del refresh en 401.
+ */
+async function rotateSession(): Promise<AuthResult | null> {
+  const token = getCookie(REFRESH_COOKIE)
+  if (!token) return null
+  const result = await authBackend.refresh(token)
+  if (!result) {
+    clearRefreshCookie()
+    return null
+  }
+  setRefreshCookie(result.refreshToken)
+  return { accessToken: result.accessToken, user: result.user }
+}
+
 /** Login: valida credenciales, setea cookie httpOnly y devuelve access + user. */
 export const loginFn = createServerFn({ method: 'POST' })
   .validator((raw: unknown) => loginSchema.parse(raw))
@@ -44,41 +61,29 @@ export const loginFn = createServerFn({ method: 'POST' })
     return { accessToken: result.accessToken, user: result.user }
   })
 
-/** Hidrata la sesión desde la cookie (sin rotar). `null` si no hay sesión. */
+/**
+ * Hidrata la sesión desde la cookie. Con el backend real no hay endpoint de
+ * validación sin rotar, así que rota el refresh (ver docs/contrato-backend.md §3).
+ * `null` si no hay sesión.
+ */
 export const getSessionFn = createServerFn({ method: 'GET' }).handler(
-  async (): Promise<AuthResult | null> => {
-    const token = getCookie(REFRESH_COOKIE)
-    if (!token) return null
-    const result = await authBackend.verify(token)
-    if (!result) {
-      clearRefreshCookie()
-      return null
-    }
-    return result
-  },
+  (): Promise<AuthResult | null> => rotateSession(),
 )
 
 /** Refresh: rota el refresh token y devuelve un access token nuevo. */
 export const refreshFn = createServerFn({ method: 'POST' }).handler(
-  async (): Promise<AuthResult | null> => {
-    const token = getCookie(REFRESH_COOKIE)
-    if (!token) return null
-    const result = await authBackend.refresh(token)
-    if (!result) {
-      clearRefreshCookie()
-      return null
-    }
-    setRefreshCookie(result.refreshToken)
-    return { accessToken: result.accessToken, user: result.user }
-  },
+  (): Promise<AuthResult | null> => rotateSession(),
 )
 
-/** Logout: revoca el refresh token y borra la cookie. */
-export const logoutFn = createServerFn({ method: 'POST' }).handler(
-  async (): Promise<{ ok: true }> => {
-    const token = getCookie(REFRESH_COOKIE)
-    if (token) await authBackend.logout(token)
+/**
+ * Logout: cierra sesión en el backend (con el access token que reenvía el
+ * cliente, Bearer) y borra la cookie httpOnly. El borrado de cookie es lo
+ * esencial y ocurre siempre, aunque la llamada al backend falle.
+ */
+export const logoutFn = createServerFn({ method: 'POST' })
+  .validator((raw: unknown) => logoutInputSchema.parse(raw))
+  .handler(async ({ data }): Promise<{ ok: true }> => {
+    if (data.accessToken) await authBackend.logout(data.accessToken)
     clearRefreshCookie()
     return { ok: true }
-  },
-)
+  })

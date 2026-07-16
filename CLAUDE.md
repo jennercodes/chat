@@ -77,10 +77,19 @@ Nunca guardes tokens en `localStorage`. Ver skill `bff-auth`.
 - **Fase 0 (scaffold) ✅** · **Fase 1 (auth) ✅** · **Fase 2 (WebSocket) ✅** ·
   **Fase 3 (chat 1:1) ✅.** Siguiente: **Fase 4 (pulido)**. Checklist por fases en
   `docs/ARQUITECTURA.md` §9.
-- Auth, WebSocket y datos de chat corren contra **mocks en memoria** hasta tener el
-  backend real: `src/server/auth-backend.ts`, `src/lib/ws/mock-socket.ts` (flag
-  `VITE_WS_MOCK`) y `src/server/chat-backend.ts`. Cada uno tras una interfaz para
-  swap directo a `fetch`. Usuarios: `ana@chat.dev` / `password`, `beto@chat.dev` /
-  `password`.
+- **Sin mocks: conectado al backend real (Spring).** Reparto de llamadas:
+  - **Auth** vía **BFF** (server functions) → `src/server/auth.ts` habla con
+    `src/server/auth-backend.ts` (`fetch` a `/auth/*`). El refresh vive en cookie
+    httpOnly; el access token en memoria (Zustand).
+  - **Chat REST** y **ticket WS** los llama el **navegador directo** con Bearer vía
+    `src/lib/api/{client,chat,ws}.ts` (`apiFetch` refresca en 401). **Requiere CORS**
+    en el backend para el origen del front.
+  - **WebSocket** nativo del navegador a `VITE_WS_URL?ticket=` (`src/lib/ws/`).
+  - Contrato en `docs/contrato-backend.md` y `docs/websocket-backend-spec.md`.
+    Config de URLs en `.env` (`VITE_API_URL`, `VITE_WS_URL`).
+- **Backend hoy es un stub** (contrato-backend §0): `login` y todo el REST actúan
+  **siempre como `u1`**; solo el ticket WS distingue usuario (`Bearer <userId>`).
+  Timestamps REST sin `Z` y WS con `Z` → los esquemas usan `z.string()`, nunca
+  `.datetime()`. `type` de conversación en MAYÚSCULAS (`DIRECT`).
 - `tsconfig` usa `noUncheckedIndexedAccess`: los accesos indexados son
   `T | undefined`; usa guardas (`?? []`, `?.`) al indexar arrays/records.

@@ -8,14 +8,21 @@ import { z } from 'zod'
  * de TypeScript. Ver `docs/ARQUITECTURA.md` (secciones 5 y 8).
  */
 
-/** Usuario del chat. */
+/**
+ * Usuario del chat. El backend envía dos formas: el `UserDto` reducido
+ * (`/users`, `auth.user`) y la entidad completa dentro de
+ * `conversation.participants` (con `nombres`, `apellidos`, `rol`…). Nos apoyamos
+ * solo en el subconjunto común `{ id, displayName, avatarUrl }`; los campos extra
+ * de la entidad completa se ignoran (Zod los descarta). Ver contrato-backend §1.
+ */
 export const userSchema = z.object({
   id: z.string(),
   displayName: z.string(),
-  avatarUrl: z.string().url().nullish(),
-  // Presencia: opcional en v1, útil más adelante.
-  status: z.enum(['online', 'offline']).optional(),
-  lastSeenAt: z.string().optional(), // ISO 8601
+  // El backend lo emite como string|null (hoy null); no siempre es una URL válida.
+  avatarUrl: z.string().nullish(),
+  // Presencia: presente en la entidad completa, ausente en el DTO.
+  status: z.enum(['online', 'offline']).nullish(),
+  lastSeenAt: z.string().nullish(), // ISO 8601 | null
 })
 export type User = z.infer<typeof userSchema>
 
@@ -42,12 +49,12 @@ export const messageSchema = z.object({
 })
 export type Message = z.infer<typeof messageSchema>
 
-/** Conversación (v1: solo 1:1). */
+/** Conversación (v1: siempre `DIRECT`). El backend emite el tipo en MAYÚSCULAS. */
 export const conversationSchema = z.object({
   id: z.string(),
-  type: z.literal('direct'),
+  type: z.enum(['DIRECT', 'GROUP']),
   participants: z.array(userSchema),
-  lastMessage: messageSchema.optional(),
+  lastMessage: messageSchema.nullish(), // null cuando la conversación no tiene mensajes
   unreadCount: z.number().int().nonnegative(),
   updatedAt: z.string(), // ISO 8601
 })

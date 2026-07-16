@@ -1,86 +1,86 @@
-import { describe, expect, it } from 'vitest'
-import { mockAuthBackend } from './auth-backend'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { httpAuthBackend } from './auth-backend'
 
-/** Afirma que un valor no es null/undefined y lo devuelve (evita el operador `!`). */
-function must<T>(value: T | null | undefined, message: string): T {
-  if (value == null) throw new Error(message)
-  return value
+/**
+ * Prueba el adaptador `fetch` contra el backend real: URLs, método, cuerpo y
+ * mapeo/validación de la respuesta. El `fetch` global se stubea.
+ */
+
+const OK_BODY = {
+  accessToken: 'jwt-access',
+  refreshToken: 'refresh-1',
+  expiresIn: 900,
+  user: { id: 'u1', displayName: 'Ana', avatarUrl: null },
 }
 
-describe('mockAuthBackend', () => {
-  it('login con credenciales válidas devuelve tokens y usuario', async () => {
-    const res = must(
-      await mockAuthBackend.login({
-        email: 'ana@chat.dev',
-        password: 'password',
-      }),
-      'login debería tener éxito',
-    )
-    expect(res.user.displayName).toBe('Ana')
-    expect(res.accessToken).toMatch(/^mock\.u1\./)
-    expect(res.refreshToken).toBeTruthy()
-  })
+function stubFetch(res: { ok: boolean; status?: number; json?: () => Promise<unknown> }) {
+  const fn = vi.fn(async (_url: string, _init?: RequestInit) => res as unknown as Response)
+  vi.stubGlobal('fetch', fn)
+  return fn
+}
 
-  it('login es case-insensitive en el email y recorta espacios', async () => {
-    const res = await mockAuthBackend.login({
-      email: '  ANA@Chat.dev  ',
+afterEach(() => {
+  vi.unstubAllGlobals()
+})
+
+describe('httpAuthBackend', () => {
+  it('login hace POST /auth/login con las credenciales y mapea la sesión', async () => {
+    const fetchMock = stubFetch({ ok: true, json: async () => OK_BODY })
+
+    const session = await httpAuthBackend.login({
+      email: 'ana@chat.dev',
       password: 'password',
     })
-    expect(res?.user.id).toBe('u1')
+
+    expect(fetchMock).toHaveBeenCalledOnce()
+    const [url, init] = fetchMock.mock.calls[0]!
+    expect(url).toBe('http://localhost:8080/auth/login')
+    expect(init?.method).toBe('POST')
+    expect(JSON.parse(init?.body as string)).toEqual({
+      email: 'ana@chat.dev',
+      password: 'password',
+    })
+    expect(session).toEqual({
+      accessToken: 'jwt-access',
+      refreshToken: 'refresh-1',
+      user: { id: 'u1', displayName: 'Ana', avatarUrl: null },
+    })
   })
 
-  it('login con credenciales inválidas devuelve null', async () => {
+  it('login con credenciales inválidas (401) devuelve null', async () => {
+    stubFetch({ ok: false, status: 401 })
     expect(
-      await mockAuthBackend.login({ email: 'ana@chat.dev', password: 'mala' }),
-    ).toBeNull()
-    expect(
-      await mockAuthBackend.login({
-        email: 'nadie@chat.dev',
-        password: 'password',
-      }),
+      await httpAuthBackend.login({ email: 'x@chat.dev', password: 'bad' }),
     ).toBeNull()
   })
 
-  it('verify valida el refresh token SIN rotarlo', async () => {
-    const login = must(
-      await mockAuthBackend.login({
-        email: 'beto@chat.dev',
-        password: 'password',
-      }),
-      'login',
-    )
-    const v1 = await mockAuthBackend.verify(login.refreshToken)
-    const v2 = await mockAuthBackend.verify(login.refreshToken)
-    expect(v1?.user.id).toBe('u2')
-    expect(v2?.user.id).toBe('u2') // sigue válido: verify no rota
+  it('refresh hace POST /auth/refresh con el refreshToken en el body', async () => {
+    const fetchMock = stubFetch({
+      ok: true,
+      json: async () => ({ ...OK_BODY, refreshToken: 'refresh-2' }),
+    })
+
+    const session = await httpAuthBackend.refresh('refresh-1')
+
+    const [url, init] = fetchMock.mock.calls[0]!
+    expect(url).toBe('http://localhost:8080/auth/refresh')
+    expect(JSON.parse(init?.body as string)).toEqual({ refreshToken: 'refresh-1' })
+    expect(session?.refreshToken).toBe('refresh-2')
   })
 
-  it('refresh rota el token: el anterior queda inválido y el nuevo es válido', async () => {
-    const login = must(
-      await mockAuthBackend.login({
-        email: 'ana@chat.dev',
-        password: 'password',
-      }),
-      'login',
-    )
-    const rotated = must(
-      await mockAuthBackend.refresh(login.refreshToken),
-      'refresh debería tener éxito',
-    )
-    expect(rotated.refreshToken).not.toBe(login.refreshToken)
-    expect(await mockAuthBackend.verify(login.refreshToken)).toBeNull()
-    expect(await mockAuthBackend.verify(rotated.refreshToken)).not.toBeNull()
-  })
+  it('logout hace POST /auth/logout con Bearer y no lanza si el backend falla', async () => {
+    const fetchMock = vi.fn(async (_url: string, _init?: RequestInit) => {
+      throw new Error('network')
+    })
+    vi.stubGlobal('fetch', fetchMock)
 
-  it('logout revoca el refresh token', async () => {
-    const login = must(
-      await mockAuthBackend.login({
-        email: 'ana@chat.dev',
-        password: 'password',
+    await expect(httpAuthBackend.logout('access-xyz')).resolves.toBeUndefined()
+    expect(fetchMock).toHaveBeenCalledWith(
+      'http://localhost:8080/auth/logout',
+      expect.objectContaining({
+        method: 'POST',
+        headers: expect.objectContaining({ Authorization: 'Bearer access-xyz' }),
       }),
-      'login',
     )
-    await mockAuthBackend.logout(login.refreshToken)
-    expect(await mockAuthBackend.verify(login.refreshToken)).toBeNull()
   })
 })

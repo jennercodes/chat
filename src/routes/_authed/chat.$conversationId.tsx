@@ -2,7 +2,7 @@ import { useEffect } from 'react'
 import { Link, createFileRoute } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { ArrowLeft } from 'lucide-react'
-import { getConversationFn, getMessagesFn } from '#/server/chat'
+import { getConversation, getMessages } from '#/lib/api/chat'
 import { useChatSocket } from '#/lib/ws/use-chat-socket'
 import { useMessagesStore } from '#/store/messages'
 import { MessageList } from '#/features/chat/message-list'
@@ -26,12 +26,12 @@ function ConversationView() {
 
   const { data: conversation } = useQuery({
     queryKey: ['conversation', conversationId],
-    queryFn: () => getConversationFn({ data: { conversationId } }),
+    queryFn: () => getConversation(conversationId),
   })
 
   useEffect(() => {
     let active = true
-    void getMessagesFn({ data: { conversationId } }).then((page) => {
+    void getMessages(conversationId).then((page) => {
       if (active) setHistory(conversationId, page.items)
     })
     return () => {

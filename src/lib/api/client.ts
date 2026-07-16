@@ -1,14 +1,12 @@
 import { env } from '#/env'
 import { refreshFn } from '#/server/auth'
 import { getAccessToken, useAuthStore } from '#/store/auth'
+import type { AuthResult } from '#/lib/validation/auth'
 
 /**
  * Cliente HTTP hacia la API REST del backend. Añade `Authorization: Bearer` con
  * el access token en memoria y, si recibe 401, intenta UN refresh y reintenta.
- *
- * Aún no hay endpoints REST protegidos (llegan en la Fase 3); este es el
- * esqueleto reutilizable. El contrato es tentativo: las llamadas concretas
- * vivirán en `src/features/*` o `src/lib/api/*`.
+ * Lo usan los módulos `lib/api/*` (chat, ws-ticket) desde el navegador.
  */
 
 function url(path: string): string {
@@ -22,13 +20,28 @@ function withAuth(init?: RequestInit): RequestInit {
   return { ...init, headers }
 }
 
+/**
+ * Refresh con "single-flight": si varias peticiones reciben 401 a la vez (p. ej.
+ * al expirar el access token de ~15 min), comparten UN solo refresh en vuelo en
+ * lugar de disparar varios en paralelo (que podrían invalidarse mutuamente si el
+ * backend rota el refresh token).
+ */
+let inflightRefresh: Promise<AuthResult | null> | null = null
+
+function refreshOnce(): Promise<AuthResult | null> {
+  inflightRefresh ??= refreshFn().finally(() => {
+    inflightRefresh = null
+  })
+  return inflightRefresh
+}
+
 export async function apiFetch(
   path: string,
   init?: RequestInit,
 ): Promise<Response> {
   let res = await fetch(url(path), withAuth(init))
   if (res.status === 401) {
-    const session = await refreshFn()
+    const session = await refreshOnce()
     if (session) {
       useAuthStore.getState().setSession(session)
       res = await fetch(url(path), withAuth(init)) // reintento único
